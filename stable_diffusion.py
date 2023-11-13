@@ -38,20 +38,19 @@ def negative_samples():
     pipe = load_model(device)
 
     for e_num in range(EPOCHS):
-        for b_num in range(NUM_BATCHES):
-            # sample NUM_LABELS from all labels
-            random.shuffle(labels)
-            images = []
-            # generate images from the sampled labels (batching needed)
-            for i in range(math.ceil(NUM_LABELS / batch_size)):
-                start_idx = i * batch_size
-                end_idx = min((i + 1) * batch_size, len(labels))
-                batch_PIL = pipe(labels[start_idx:end_idx]).images[:(end_idx - start_idx)]
-                for i in range(len(batch_PIL)):
-                  batch_PIL[i] = np.array(batch_PIL[i]) 
-                images.append(np.stack(batch_PIL, axis=0))
-            # epoch, batch number, and label as metadata
-            bk_array = np.concatenate(images, axis=0)
-            np.save(BASE_PATH + str(e_num) + "_" + str(b_num) + ".npy", bk_array)
+        # sample NUM_LABELS from all labels
+        random.shuffle(labels)
+        images = []
+        # generate images from the sampled labels (batching needed)
+        for i in range(math.ceil(NUM_LABELS / batch_size)):
+            start_idx = i * batch_size
+            end_idx = min((i + 1) * batch_size, len(labels))
+            batch_PIL = pipe(labels[start_idx:end_idx]).images[:(end_idx - start_idx)]
+            for i in range(len(batch_PIL)):
+                batch_PIL[i] = np.array(batch_PIL[i]) 
+            images.append(np.stack(batch_PIL, axis=0))
+        # epoch, batch number, and label as metadata
+        bk_array = np.concatenate(images, axis=0)
+        np.save(BASE_PATH + str(e_num) + ".npy", bk_array)
 
 negative_samples()
