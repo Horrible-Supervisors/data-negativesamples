@@ -42,6 +42,12 @@ def negative_samples(pipe):
                  ' Batch size : ', batch_size, ' Epochs : ', EPOCHS))
     logging.info(('Is cuda available : ', torch.cuda.is_available()))
 
+    base_path = os.path.join(os.getcwd(), BASE_FOLDER)
+
+    if not os.path.exists(base_path):
+        os.mkdir(base_path)
+
+
     labels = load_labels(ds_name)
 
     # generate images from the labels (batching needed)
@@ -53,7 +59,7 @@ def negative_samples(pipe):
         for id in range(end_idx - start_idx):
             for e in range(EPOCHS):
                 # image name format: imageId_#sample.png
-                output_file_path = os.path.join(os.getcwd(), BASE_FOLDER, str(id + start_idx) + "_" + str(e) + '.png')
+                output_file_path = os.path.join(base_path, str(id + start_idx) + "_" + str(e) + '.png')
                 batch_PIL[id * EPOCHS + e].resize((224, 224)).save(output_file_path, "PNG")
 
 # refer to requirements.txt for requirements
