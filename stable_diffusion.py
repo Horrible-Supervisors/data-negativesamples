@@ -8,14 +8,16 @@ import json
 from diffusers import StableDiffusionPipeline
 import torch
 
+import logging
+
 device = "cuda"
 ds_name = "ImageNet"
 # number of generated images per label
 EPOCHS = 5
 # number of labels passed to the diffusion model at one time
-batch_size = 128
+batch_size = 2
 # path to the data folder
-BASE_PATH = "./data/"
+BASE_FOLDER = "data"
 
 def load_labels(ds_name):
     if ds_name == "Imagenette":
@@ -34,6 +36,12 @@ def load_model(device):
     return pipe
 
 def negative_samples(pipe):
+    logging.basicConfig(level=logging.INFO)
+    logging.info(('Creating negative image examples with parameters:', 
+                 ' Device : ', device, ' ds_name : ', ds_name, 
+                 ' Batch size : ', batch_size, ' Epochs : ', EPOCHS))
+    logging.info(('Is cuda available : ', torch.cuda.is_available()))
+
     labels = load_labels(ds_name)
 
     # generate images from the labels (batching needed)
@@ -45,7 +53,8 @@ def negative_samples(pipe):
         for id in range(end_idx - start_idx):
             for e in range(EPOCHS):
                 # image name format: imageId_#sample.png
-                batch_PIL[id * EPOCHS + e].resize((224, 224)).save(BASE_PATH + str(id + start_idx) + "_" + str(e), "PNG")
+                output_file_path = os.path.join(os.getcwd(), BASE_FOLDER, str(id + start_idx) + "_" + str(e) + '.png')
+                batch_PIL[id * EPOCHS + e].resize((224, 224)).save(output_file_path, "PNG")
 
 # refer to requirements.txt for requirements
 # Stable Diffusion model uses accelerate to lower memory usage and accelerate inference 
