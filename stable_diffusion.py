@@ -9,18 +9,18 @@ from diffusers import StableDiffusionPipeline
 import torch
 
 device = "cuda"
-ds_name = "Imagette"
-# number of labels samples from all
-NUM_LABELS = 10
-NUM_BATCHES = 10
+ds_name = "ImageNet"
+# number of generated images per label
 EPOCHS = 5
+# number of labels passed to the diffusion model at one time
 batch_size = 128
+# path to the data folder
 BASE_PATH = "./data/"
 
 def load_labels(ds_name):
-    if ds_name == "Imagette":
+    if ds_name == "Imagenette":
         # load Imagenette labels
-        labels = ['tench', 'English springer', 'cassette player', 'chain saw', 'church', 'French horn', 
+        labels = ['a photo of tench', 'a photo of English springer', 'a photo of cassette player', 'chain saw', 'church', 'French horn', 
                   'garbage truck', 'gas pump', 'golf ball', 'parachute']
     else:
         # load Imagenet labels
@@ -33,24 +33,21 @@ def load_model(device):
     pipe = pipe.to(device)
     return pipe
 
-def negative_samples():
+def negative_samples(pipe):
     labels = load_labels(ds_name)
-    pipe = load_model(device)
 
-    for e_num in range(EPOCHS):
-        # sample NUM_LABELS from all labels
-        random.shuffle(labels)
-        images = []
-        # generate images from the sampled labels (batching needed)
-        for i in range(math.ceil(NUM_LABELS / batch_size)):
-            start_idx = i * batch_size
-            end_idx = min((i + 1) * batch_size, len(labels))
-            batch_PIL = pipe(labels[start_idx:end_idx]).images[:(end_idx - start_idx)]
-            for i in range(len(batch_PIL)):
-                batch_PIL[i] = np.array(batch_PIL[i]) 
-            images.append(np.stack(batch_PIL, axis=0))
-        # epoch, batch number, and label as metadata
-        bk_array = np.concatenate(images, axis=0)
-        np.save(BASE_PATH + str(e_num) + ".npy", bk_array)
+    # generate images from the labels (batching needed)
+    for i in range(math.ceil(len(labels) / batch_size)):
+        start_idx = i * batch_size
+        end_idx = min((i + 1) * batch_size, len(labels))
+        batch_PIL = pipe(labels[start_idx:end_idx], num_images_per_prompt=EPOCHS).images
+        # save the images to disk
+        for id in range(end_idx - start_idx):
+            for e in range(EPOCHS):
+                # image name format: imageId_#sample.png
+                batch_PIL[id * EPOCHS + e].resize((224, 224)).save(BASE_PATH + str(id + start_idx) + "_" + str(e), "PNG")
 
-negative_samples()
+# refer to requirements.txt for requirements
+# Stable Diffusion model uses accelerate to lower memory usage and accelerate inference 
+pipe = load_model(device)
+negative_samples(pipe)
